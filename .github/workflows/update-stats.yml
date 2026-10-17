@@ -1,0 +1,36 @@
+name: Update GitHub Stats Panel
+
+on:
+  schedule:
+    - cron: "0 0 * * *"      # 每天 08:00 (UTC+8) 刷新一次
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - assets/stats.svg
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Render assets/stats.svg
+        run: python3 scripts/build_stats.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- assets/stats.svg; then
+            echo "stats unchanged"; exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/stats.svg
+          git commit -m "chore: refresh stats panel"
+          git push
